@@ -1,72 +1,101 @@
-#include "basic_ecs.cpp"
+// #include "basic_ecs.cpp"
+#include "./basic_template.cpp"
 #include <raylib.h>
-const u32 ScreenWidth = 800;
-const u32 ScreenHight = 600;
-namespace gates {
-namespace andgatepoint {
-const u32 rectheight = 30;
-const u32 rectwidth = 50;
-} // namespace andgatepoint
-class draggable {
-  bool pressing = false;
-  virtual bool point_detection(rlib::Vector2 point) = 0;
-  virtual void when_pressing() = 0;
-  rlib::Vector2 mouse_position = {0};
-  void update() {
-    if (rlib::IsMouseButtonDown(rlib::MOUSE_BUTTON_LEFT) &&
-        point_detection(rlib::GetMousePosition())) {
-      if (!pressing) {
-        mouse_position = rlib::GetMousePosition();
+#include <set>
+// const region
+// end region
+
+// declaration
+struct AndGate;
+// declaration end
+static std::set<AndGate *> gameobjects = std::set<AndGate *>();
+class object {
+  virtual void ready() {}
+  virtual void draw() {}
+  virtual void update() {}
+};
+class Node2d : virtual object {
+public:
+  Vector2 pos;
+  Node2d(Vector2 pos) : pos(pos) {}
+};
+class draggable : protected virtual Node2d {
+public:
+  bool clicking = false;
+  virtual bool collision_point(Vector2 point) = 0;
+  void dragging() {
+
+    static draggable *current_select = nullptr;
+    static Vector2 previous_obj_pos = {0};
+    static Vector2 mouse_click_pos = {0};
+    if (current_select == nullptr) {
+      if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
+          collision_point(GetMousePosition())) {
+        if (clicking == false) {
+          previous_obj_pos = pos;
+          mouse_click_pos = GetMousePosition();
+          current_select = this;
+        }
+        clicking = true;
       }
-      pressing = true;
-    } else {
-      pressing = false;
     }
-    if (pressing) {
-      when_pressing();
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+      clicking = false;
+      current_select = nullptr;
+    }
+    if (clicking == true) {
+      pos = previous_obj_pos + GetMousePosition() - mouse_click_pos;
     }
   }
 };
-class andgate : public ecs::object, draggable {
-  rlib::Vector2 pos = {0};
-  u8 thickness = 2;
+class AndGate : public draggable {
+  const float AndGateHeight = 30;
+  const float AndGateWidth = 50;
 
 public:
-  andgate() : pos(), thickness(5) {}
-  rlib::Rectangle rect() {
-    using namespace andgatepoint;
-    rlib::Rectangle rect = {pos.x, pos.y, rectwidth, rectheight};
-    return rect;
-  }
-  // namespace point
+  AndGate(Vector2 pos = {0}) : Node2d(pos) {}
+
+  void update() override { dragging(); }
   void draw() override {
-    using namespace rlib;
-    using namespace andgatepoint;
-    Rectangle rect = this->rect();
-    DrawRectangleRec(rect, rlib::RED);
-    DrawCircle(pos.x + rectwidth, pos.y + rectheight / 2.0, rectheight / 2.0,
-               rlib::RED);
-    DrawText("Bezier curve representing AND gate", 10, 10, 20, DARKGRAY);
+    DrawRectangleRec(rect(), RED);
+    DrawCircleCir(cir(), RED);
   }
-  bool point_detection(rlib::Vector2 point) override {
-    return rlib::CheckCollisionPointRec(point, rect());
+  // functions
+private:
+  Rectangle rect() {
+    return Rectangle{pos.x, pos.y, AndGateWidth, AndGateHeight};
   }
-  void when_pressing() override {
-	
+  Vector2 circle_center() {
+    return Vector2{pos.x + AndGateWidth,
+                   static_cast<float>(pos.y + AndGateHeight / 2.0)};
+  }
+  float circle_radius() { return AndGateHeight / 2.0; }
+  Circle cir() { return Circle{circle_center(), circle_radius()}; }
+  bool collision_point(Vector2 point) override {
+    return CheckCollisionPointRec(point, rect()) ||
+           CheckCollisionPointCircle(point, circle_center(), circle_radius());
   }
 };
-} // namespace gates
-
 int main() {
-  rlib::InitWindow(ScreenWidth, ScreenHight, "Logic Gate Simulator");
-  auto t1 = gates::andgate();
-  rlib::SetTargetFPS(60);
-  ecs::object::allready();
-  while (!rlib::WindowShouldClose()) {
-    ecs::object::allupdate();
-    rlib::BeginDrawing();
-    rlib::ClearBackground(rlib::RAYWHITE);
-    ecs::object::alldraw();
-    rlib::EndDrawing();
+  {
+    const u32 ScreenWidth = 800;
+    const u32 ScreenHeight = 600;
+    InitWindow(ScreenWidth, ScreenHeight, "Logic gate simulator");
+  }
+
+  SetTargetFPS(60);
+  AndGate a1 = AndGate({20, 50});
+  AndGate a2 = AndGate({50, 60});
+  gameobjects.insert(&a1);
+  gameobjects.insert(&a2);
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    for (auto gameobject : gameobjects) {
+      gameobject->update();
+      gameobject->draw();
+    }
+
+    EndDrawing();
   }
 }

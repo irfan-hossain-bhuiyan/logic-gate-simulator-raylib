@@ -2,15 +2,14 @@
 class m{
 	virtual void fn()=0;
 };
-class a:virtual public m{
-	void fn()override{std::cout<<"a";}
+class a:public m{
+	virtual void fn()=0;
+	void fn()override{std::cout<<"a";fn();}
 };
-class b:virtual public m{
+class b:public a{
 	void fn()override{std::cout<<"b";}
 };
-class t:public a,public b{
-	
-};
 int main(){
-	t a();
+	b t;
+	t.fn();  //output:ab
 }

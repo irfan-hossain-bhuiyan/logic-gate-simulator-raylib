@@ -10,6 +10,7 @@ class object {
 private:
   static std::set<object *> objects;
   u32 id;
+
 protected:
   object() {
     id = objects.size();
@@ -25,6 +26,7 @@ protected:
       objects.erase(it);
     }
   }
+  virtual void update() {}
   virtual void draw() {}
   virtual void ready() {}
 
@@ -42,6 +44,11 @@ public:
     }
     rlib::EndDrawing();
   }
+  static void allupdate() {
+    for (auto obj : objects) {
+      obj->draw();
+    }
+  }
 };
-std::set<object *> object::objects=std::set<object*>();
+std::set<object *> object::objects = std::set<object *>();
 } // namespace ecs

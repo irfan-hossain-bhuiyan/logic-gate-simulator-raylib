@@ -2,24 +2,26 @@
 #include "./basic_template.cpp"
 #include <raylib.h>
 #include <set>
+#include <vector>
 // const region
 // end region
 
 // declaration
 struct AndGate;
+class object;
 // declaration end
-static std::set<AndGate *> gameobjects = std::set<AndGate *>();
 class object {
+public:
   virtual void ready() {}
   virtual void draw() {}
   virtual void update() {}
 };
-class Node2d : virtual object {
+class Node2d : public virtual object {
 public:
   Vector2 pos;
   Node2d(Vector2 pos) : pos(pos) {}
 };
-class draggable : protected virtual Node2d {
+class draggable : public virtual Node2d {
 public:
   bool clicking = false;
   virtual bool collision_point(Vector2 point) = 0;
@@ -76,7 +78,26 @@ private:
            CheckCollisionPointCircle(point, circle_center(), circle_radius());
   }
 };
+class NotGate : public draggable {
+  const float NotGateHeight = 30;
+  const float NotGateWidth = 50;
+
+public:
+  NotGate(Vector2 pos = {0}) : Node2d(pos) {}
+  Vector2 point1() { return pos; }
+  Vector2 point2() { return {pos.x, pos.y + NotGateHeight}; }
+  Vector2 point3() {
+    return {pos.x + NotGateWidth, pos.y + NotGateHeight / 2.0f};
+  }
+  std::vector<Vector2> points() { return {point1(), point2(), point3()}; }
+  void draw() override { DrawTriangle(point1(), point2(), point3(), RED); }
+  bool collision_point(Vector2 point) override {
+    return CheckCollisionPointTriangle(point, point1(), point2(), point3());
+  }
+  void update() override { dragging(); }
+};
 int main() {
+  static std::set<object *> gameobjects = std::set<object *>();
   {
     const u32 ScreenWidth = 800;
     const u32 ScreenHeight = 600;
@@ -86,8 +107,10 @@ int main() {
   SetTargetFPS(60);
   AndGate a1 = AndGate({20, 50});
   AndGate a2 = AndGate({50, 60});
+  NotGate n1 = NotGate({10, 30});
   gameobjects.insert(&a1);
   gameobjects.insert(&a2);
+  gameobjects.insert(&n1);
   while (!WindowShouldClose()) {
     BeginDrawing();
     ClearBackground(RAYWHITE);

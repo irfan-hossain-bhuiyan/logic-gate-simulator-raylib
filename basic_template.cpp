@@ -1,3 +1,4 @@
+#pragma once
 #include <raylib.h>
 #include <raymath.h>
 
@@ -40,3 +41,4 @@ struct Circle {
 void DrawCircleCir(Circle cir, Color color) {
   DrawCircle(cir.center.x, cir.center.y, cir.radius, color);
 }
+

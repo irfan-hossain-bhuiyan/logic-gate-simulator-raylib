@@ -1,5 +1,5 @@
-// #include "basic_ecs.cpp"
 #include "./basic_template.cpp"
+#include "./object.cpp"
 #include <raylib.h>
 #include <set>
 #include <vector>
@@ -10,46 +10,8 @@
 struct AndGate;
 class object;
 // declaration end
-class object {
-public:
-  virtual void ready() {}
-  virtual void draw() {}
-  virtual void update() {}
-};
-class Node2d : public virtual object {
-public:
-  Vector2 pos;
-  Node2d(Vector2 pos) : pos(pos) {}
-};
-class draggable : public virtual Node2d {
-public:
-  bool clicking = false;
-  virtual bool collision_point(Vector2 point) = 0;
-  void dragging() {
-
-    static draggable *current_select = nullptr;
-    static Vector2 previous_obj_pos = {0};
-    static Vector2 mouse_click_pos = {0};
-    if (current_select == nullptr) {
-      if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
-          collision_point(GetMousePosition())) {
-        if (clicking == false) {
-          previous_obj_pos = pos;
-          mouse_click_pos = GetMousePosition();
-          current_select = this;
-        }
-        clicking = true;
-      }
-    }
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-      clicking = false;
-      current_select = nullptr;
-    }
-    if (clicking == true) {
-      pos = previous_obj_pos + GetMousePosition() - mouse_click_pos;
-    }
-  }
-};
+//
+// And Gate class
 class AndGate : public draggable {
   const float AndGateHeight = 30;
   const float AndGateWidth = 50;
@@ -61,6 +23,9 @@ public:
   void draw() override {
     DrawRectangleRec(rect(), RED);
     DrawCircleCir(cir(), RED);
+    if (current_selected == this) {
+      DrawRectangleLinesEx(rect(), 3, BLACK);
+    }
   }
   // functions
 private:
@@ -77,6 +42,8 @@ private:
     return CheckCollisionPointRec(point, rect()) ||
            CheckCollisionPointCircle(point, circle_center(), circle_radius());
   }
+
+  // Not gate class
 };
 class NotGate : public draggable {
   const float NotGateHeight = 30;
@@ -96,6 +63,15 @@ public:
   }
   void update() override { dragging(); }
 };
+
+// Switch
+class Switch : public DummyRectObject {
+public:
+  Switch(Vector2 pos) : Node2d(pos), DummyRectObject("Switch off") {}
+  void update() override { dragging(); }
+};
+
+// Bulb
 int main() {
   static std::set<object *> gameobjects = std::set<object *>();
   {
@@ -111,11 +87,17 @@ int main() {
   gameobjects.insert(&a1);
   gameobjects.insert(&a2);
   gameobjects.insert(&n1);
+  for (auto gameobject : gameobjects) {
+    gameobject->ready();
+  }
   while (!WindowShouldClose()) {
+    manager::main(); // For a data to the frame number it is currently on.
+    for (auto gameobject : gameobjects) {
+      gameobject->update();
+    }
     BeginDrawing();
     ClearBackground(RAYWHITE);
     for (auto gameobject : gameobjects) {
-      gameobject->update();
       gameobject->draw();
     }
 

@@ -17,13 +17,12 @@ class AndGate : public draggable {
   const float AndGateWidth = 50;
 
 public:
-  AndGate(Vector2 pos = {0}) : Node2d(pos) {}
+  AndGate(Vector2 pos = {0}) : Node2d(pos) {draw_event.add_link([this](){this->draw();});}
 
-  void update() override { dragging(); }
-  void draw() override {
+  void draw() {
     DrawRectangleRec(rect(), RED);
     DrawCircleCir(cir(), RED);
-    if (current_selected == this) {
+    if (is_clicking) {
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
   }
@@ -50,25 +49,23 @@ class NotGate : public draggable {
   const float NotGateWidth = 50;
 
 public:
-  NotGate(Vector2 pos = {0}) : Node2d(pos) {}
+  NotGate(Vector2 pos = {0}) : Node2d(pos) {draw_event.add_link([this](){this->draw();});}
   Vector2 point1() { return pos; }
   Vector2 point2() { return {pos.x, pos.y + NotGateHeight}; }
   Vector2 point3() {
     return {pos.x + NotGateWidth, pos.y + NotGateHeight / 2.0f};
   }
   std::vector<Vector2> points() { return {point1(), point2(), point3()}; }
-  void draw() override { DrawTriangle(point1(), point2(), point3(), RED); }
+  void draw() { DrawTriangle(point1(), point2(), point3(), RED); }
   bool collision_point(Vector2 point) override {
     return CheckCollisionPointTriangle(point, point1(), point2(), point3());
   }
-  void update() override { dragging(); }
 };
 
 // Switch
 class Switch : public DummyRectObject {
 public:
   Switch(Vector2 pos) : Node2d(pos), DummyRectObject("Switch off") {}
-  void update() override { dragging(); }
 };
 
 // Bulb
@@ -88,19 +85,22 @@ int main() {
   gameobjects.insert(&a2);
   gameobjects.insert(&n1);
   for (auto gameobject : gameobjects) {
-    gameobject->ready();
+    gameobject->ready_event.trigger_event();
   }
   while (!WindowShouldClose()) {
-    manager::main(); // For a data to the frame number it is currently on.
+    manager::onready(); // For a data to the frame number it is currently on.
     for (auto gameobject : gameobjects) {
-      gameobject->update();
+      gameobject->input_event.trigger_event();
+    }
+    for (auto gameobject : gameobjects) {
+      gameobject->update_event.trigger_event();
     }
     BeginDrawing();
     ClearBackground(RAYWHITE);
     for (auto gameobject : gameobjects) {
-      gameobject->draw();
+      gameobject->draw_event.trigger_event();
     }
-
+    manager::lastdrawing();
     EndDrawing();
   }
 }

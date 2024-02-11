@@ -10,8 +10,6 @@ using u8 = char;
 #define pii pair<int, int>
 #define pb push_back
 #define mp make_pair
-#define all(x) (x).begin(), (x).end()
-#define rall(x) (x).rbegin(), (x).rend()
 // Loop macros for brevity
 #define range(i, a, b) for (int i = (a); i < (b); ++i)
 #define rangeb(i, a, b, s) for (i64 i = (a); i < (b) - (s) + 1; i += (s))
@@ -41,4 +39,6 @@ struct Circle {
 void DrawCircleCir(Circle cir, Color color) {
   DrawCircle(cir.center.x, cir.center.y, cir.radius, color);
 }
-
+bool CheckCollisionPointCircle(Vector2 point, Circle cir){
+	return CheckCollisionPointCircle(point, cir.center, cir.radius);
+}

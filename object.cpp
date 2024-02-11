@@ -14,21 +14,22 @@ class Node2d;
 class clickable;
 class draggable;
 class DummyRectObject;
+class ObjectGroup;
 
 // Declaration of event class
-class event {
+template <typename... Args> class event {
 public:
   event() : events() {}
 
-  void add_link(std::function<void()> func) { events.push_back(func); }
-  void trigger_event() {
+  void add_link(std::function<void(Args...)> func) { events.push_back(func); }
+  void trigger_event(Args... args) {
     for (auto x : events) {
-      x();
+      x(args...);
     }
   }
 
 private:
-  std::vector<std::function<void()>> events;
+  std::vector<std::function<void(Args...)>> events;
 };
 
 // Declaration of manager namespace
@@ -37,6 +38,7 @@ static u64 frame = 0;
 void onready();
 void lastdrawing();
 
+} // namespace manager
 namespace Debug {
 const u32 max_size_ = 16;
 std::queue<std::string> queue_ = std::queue<std::string>();
@@ -63,8 +65,6 @@ std::string get_combined_text() {
 }
 
 } // namespace Debug
-} // namespace manager
-
 // Definition of manager namespace
 namespace manager {
 void onready() { frame++; }
@@ -79,49 +79,56 @@ void lastdrawing() {
 // Declaration of object class
 class object {
 public:
-  static std::set<object *> objects;
-  object() { objects.insert(this); }
+  object() {}
   virtual ~object() {
-    manager::Debug::add_text("Destructor called.");
-    objects.erase(objects.find(this));
+    Debug::add_text("Destructor called.");
+    on_death.trigger_event(this);
   }
-  static void onready();
-  static void onupdate();
-  static void ondraw();
-  static void oninputevent();
-
-protected:
-  event ready_event;
-  event update_event;
-  event draw_event;
+  event<> ready_event;
+  event<> update_event;
+  event<> draw_event;
+  event<> input_event;
+  void on_death_add_link(std::function<void(object *)> func) {
+    on_death.add_link(func);
+  }
 
 private:
-  event input_event;
-  friend class clickable;
+  event<object *> on_death;
+};
+class ObjectGroup {
+  std::set<object *> objects;
+
+public:
+  ObjectGroup(std::initializer_list<object *> objs)
+      : objects(objs.begin(), objs.end()) {}
+  void add(object *obj) {
+    objects.insert(obj);
+    obj->on_death_add_link([this](auto x) { this->objects.erase(x); });
+  }
+  void remove(object *obj) { objects.erase(obj); }
+  void all_ready() {
+    for (auto x : objects) {
+      x->ready_event.trigger_event();
+    }
+  }
+  void all_update() {
+    for (auto x : objects) {
+      x->update_event.trigger_event();
+    }
+  }
+  void all_draw() {
+    for (auto x : objects) {
+      x->draw_event.trigger_event();
+    }
+  }
+  void all_input() {
+    for (auto x : objects) {
+      x->input_event.trigger_event();
+    }
+  }
 };
 
 // Definition of object class member functions
-void object::onready() {
-  for (auto x : objects) {
-    x->ready_event.trigger_event();
-  }
-}
-void object::onupdate() {
-  for (auto x : objects) {
-    x->update_event.trigger_event();
-  }
-}
-void object::ondraw() {
-  for (auto x : objects) {
-    x->draw_event.trigger_event();
-  }
-}
-void object::oninputevent() {
-  for (auto x : objects) {
-    x->input_event.trigger_event();
-  }
-}
-std::set<object *> object::objects = std::set<object *>();
 
 // Declaration of Node2d class
 class Node2d : public virtual object {
@@ -134,7 +141,7 @@ public:
 // Declaration of clickable class
 class clickable : public virtual object {
 public:
-  event on_click_pressed;
+  event<> on_click_pressed;
   bool is_clicking = false;
   clickable();
   virtual bool collision_point(Vector2 point) = 0;
@@ -281,7 +288,7 @@ void Spline::draw() {
 
 // Definition of gatepoint class member functions
 gatepoint::gatepoint(State state) : state(state) {
-  manager::Debug::add_text("constructor called.");
+  Debug::add_text("constructor called.");
   on_click_pressed.add_link([this]() { this->on_click(); });
   draw_event.add_link([this]() { this->draw(); });
 }
@@ -309,12 +316,16 @@ void gatepoint::on_click() {
   }
   if (Spline::drawing_spline != nullptr) {
     if (state == ingoing && Spline::drawing_spline->ingoing_point == nullptr) {
+      // They are doubly linked.You need to coonect pointer of the spline to
+      // gatepointer and gatepointer to the spline. There are duplication in
+      // here.
       Spline::drawing_spline->ingoing_point = this;
       connected_spline.push_back(Spline::drawing_spline);
       Spline::drawing_spline = nullptr;
 
     } else if (state == outgoing &&
                Spline::drawing_spline->outgoing_point == nullptr) {
+      // There are duplication in here.
       Spline::drawing_spline->outgoing_point = this;
       connected_spline.push_back(Spline::drawing_spline);
       Spline::drawing_spline = nullptr;

@@ -148,14 +148,15 @@ int main() {
   AndGate a1 = AndGate({20, 50});
   AndGate a2 = AndGate({50, 60});
   NotGate n1 = NotGate({10, 30});
-  object::onready();
+  ObjectGroup obj_group={&a1,&a2,&n1};
+  obj_group.all_ready();
   while (!WindowShouldClose()) {
     manager::onready(); // For a data to the frame number it is currently on.
-    object::oninputevent();
-    object::onupdate();
+    obj_group.all_input();
+    obj_group.all_update();
     BeginDrawing();
     ClearBackground(RAYWHITE);
-    object::ondraw();
+    obj_group.all_draw();
     manager::lastdrawing();
     EndDrawing();
   }

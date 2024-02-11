@@ -1,5 +1,6 @@
 #include "./basic_template.cpp"
 #include "./object.cpp"
+#include <memory>
 #include <raylib.h>
 #include <vector>
 // const region
@@ -20,6 +21,8 @@ class gate : public draggable, public Rect {
 private:
   i32 input_point = 0;
   i32 output_point = 0;
+  std::vector<gatepoint *> gateinputpoints;
+  std::vector<gatepoint *> gateoutputpoints;
 
 public:
   std::vector<bool> inputs;
@@ -33,7 +36,7 @@ public:
       auto point1 = pos + Vector2{0, segment_height * i};
       auto point2 = point1 + Vector2{-line_height, 0};
       DrawLineV(point1, point2, Defaultcolor);
-      DrawCircleV(point2, circle_width, Defaultcolor);
+      gateinputpoints[i - 1]->pos = point2;
     }
     // Draw output line
     segment_height = rec.height / (output_point + 1);
@@ -42,17 +45,33 @@ public:
       auto point1 = pos + Vector2{rec.width, segment_height * i};
       auto point2 = point1 + Vector2{line_height, 0};
       DrawLineV(point1, point2, Defaultcolor);
-      DrawCircleV(point2, circle_width, Defaultcolor);
+      gateoutputpoints[i - 1]->pos = point2;
     }
   }
 
 public:
   virtual void evaluate(){};
+
   gate(float width, float height, i32 input_point = 2, i32 output_point = 1)
       : input_point(input_point), output_point(output_point),
         inputs(input_point), outputs(output_point), Rect(width, height) {
-
+    gateinputpoints.reserve(input_point);
+    gateoutputpoints.reserve(output_point);
+    range(i, 0, input_point) {
+      gateinputpoints.push_back(new gatepoint(gatepoint::ingoing));
+    }
+    range(i, 0, output_point) {
+      gateoutputpoints.push_back(new gatepoint(gatepoint::outgoing));
+    }
     draw_event.add_link([this]() { this->draw(); });
+  }
+  ~gate() {
+    for (auto x : gateinputpoints) {
+      delete x;
+    }
+    for (auto x : gateoutputpoints) {
+      delete x;
+    }
   }
 };
 

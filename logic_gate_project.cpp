@@ -1,6 +1,5 @@
 #include "./basic_template.cpp"
 #include "./object.cpp"
-#include <memory>
 #include <raylib.h>
 #include <vector>
 // const region
@@ -21,8 +20,8 @@ class gate : public draggable, public Rect {
 private:
   i32 input_point = 0;
   i32 output_point = 0;
-  std::vector<gatepoint *> gateinputpoints;
-  std::vector<gatepoint *> gateoutputpoints;
+  ObjectVec<gatepoint> gateinputpoints;
+  ObjectVec<gatepoint> gateoutputpoints;
 
 public:
   std::vector<bool> inputs;
@@ -36,7 +35,7 @@ public:
       auto point1 = pos + Vector2{0, segment_height * i};
       auto point2 = point1 + Vector2{-line_height, 0};
       DrawLineV(point1, point2, Defaultcolor);
-      gateinputpoints[i - 1]->pos = point2;
+      gateinputpoints.ptr_array[i - 1]->pos = point2;
     }
     // Draw output line
     segment_height = rec.height / (output_point + 1);
@@ -45,7 +44,7 @@ public:
       auto point1 = pos + Vector2{rec.width, segment_height * i};
       auto point2 = point1 + Vector2{line_height, 0};
       DrawLineV(point1, point2, Defaultcolor);
-      gateoutputpoints[i - 1]->pos = point2;
+      gateoutputpoints.ptr_array[i - 1]->pos = point2;
     }
   }
 
@@ -55,23 +54,17 @@ public:
   gate(float width, float height, i32 input_point = 2, i32 output_point = 1)
       : input_point(input_point), output_point(output_point),
         inputs(input_point), outputs(output_point), Rect(width, height) {
-    gateinputpoints.reserve(input_point);
-    gateoutputpoints.reserve(output_point);
+    gateinputpoints.ptr_array.reserve(input_point);
+    gateoutputpoints.ptr_array.reserve(output_point);
     range(i, 0, input_point) {
-      gateinputpoints.push_back(new gatepoint(gatepoint::ingoing));
+      gateinputpoints.add(new gatepoint(gatepoint::ingoing));
     }
     range(i, 0, output_point) {
-      gateoutputpoints.push_back(new gatepoint(gatepoint::outgoing));
+      gateoutputpoints.add(new gatepoint(gatepoint::outgoing));
     }
     draw_event.add_link([this]() { this->draw(); });
-  }
-  ~gate() {
-    for (auto x : gateinputpoints) {
-      delete x;
-    }
-    for (auto x : gateoutputpoints) {
-      delete x;
-    }
+    gateinputpoints.link_to_object(this);
+    gateoutputpoints.link_to_object(this);
   }
 };
 
@@ -148,15 +141,18 @@ int main() {
   AndGate a1 = AndGate({20, 50});
   AndGate a2 = AndGate({50, 60});
   NotGate n1 = NotGate({10, 30});
-  ObjectGroup obj_group={&a1,&a2,&n1};
-  obj_group.all_ready();
+  ObjectSet<object> obj_group;
+  obj_group.add(&a1);
+  obj_group.add(&a2);
+  obj_group.add(&n1);
+  obj_group.add(&Spline::splines);
+  obj_group.ready();
   while (!WindowShouldClose()) {
     manager::onready(); // For a data to the frame number it is currently on.
-    obj_group.all_input();
-    obj_group.all_update();
+    obj_group.update();
     BeginDrawing();
     ClearBackground(RAYWHITE);
-    obj_group.all_draw();
+    obj_group.draw();
     manager::lastdrawing();
     EndDrawing();
   }

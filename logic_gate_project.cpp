@@ -7,17 +7,15 @@
 // end region
 // declaration
 struct AndGate;
-class object;
 // declaration end
 //
 // And Gate class
-const float AndGateHeight = 30;
-const float AndGateWidth = 50;
 class AndGate : public gate {
+  static constexpr float GateHeight = 30;
+  static constexpr float GateWidth = 50;
 
 public:
-  AndGate(Vector2 pos = {0})
-      : Node2d(pos), gate(AndGateWidth, AndGateHeight, 2, 1) {
+  AndGate(Vector2 pos = {0}) : Node2d(pos), gate(GateWidth, GateHeight, 2, 1) {
     draw_event.add_link([this]() { this->draw(); });
   }
 
@@ -27,14 +25,19 @@ public:
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
   }
-  void evaluate() override { }
+  void evaluate() override {
+    this->gateoutputpoints[0]->boolean_state =
+        this->gateinputpoints[0]->boolean_state &&
+        this->gateinputpoints[1]->boolean_state;
+
+  }
   // functions
 private:
   Vector2 circle_center() {
-    return Vector2{pos.x + AndGateWidth,
-                   static_cast<float>(pos.y + AndGateHeight / 2.0)};
+    return Vector2{pos.x + GateWidth,
+                   static_cast<float>(pos.y + GateHeight / 2.0)};
   }
-  float circle_radius() { return AndGateHeight / 2.0; }
+  float circle_radius() { return GateHeight / 2.0; }
   Circle cir() { return Circle{circle_center(), circle_radius()}; }
   bool collision_point(Vector2 point) override {
     return CheckCollisionPointRec(point, rect()) ||
@@ -44,26 +47,26 @@ private:
   // Not gate class
 };
 
-const float NotGateHeight = 30;
-const float NotGateWidth = 50;
 class NotGate : public gate {
 
+  static constexpr float GateHeight = 30;
+  static constexpr float GateWidth = 50;
+
 public:
-  NotGate(Vector2 pos = {0})
-      : Node2d(pos), gate(NotGateWidth, NotGateHeight, 1, 1) {
+  NotGate(Vector2 pos = {0}) : Node2d(pos), gate(GateWidth, GateHeight, 1, 1) {
     draw_event.add_link([this]() { this->draw(); });
   }
   Vector2 point1() { return pos; }
-  Vector2 point2() { return {pos.x, pos.y + NotGateHeight}; }
-  Vector2 point3() {
-    return {pos.x + NotGateWidth, pos.y + NotGateHeight / 2.0f};
-  }
+  Vector2 point2() { return {pos.x, pos.y + GateHeight}; }
+  Vector2 point3() { return {pos.x + GateWidth, pos.y + GateHeight / 2.0f}; }
   std::vector<Vector2> points() { return {point1(), point2(), point3()}; }
   void draw() { DrawTriangle(point1(), point2(), point3(), RED); }
   bool collision_point(Vector2 point) override {
     return CheckCollisionPointTriangle(point, point1(), point2(), point3());
   }
-  void evaluate() override { }
+  void evaluate() override {
+	gateoutputpoints[0]->boolean_state=!gateinputpoints[0]->boolean_state;
+  }
 };
 
 // Switch
@@ -86,7 +89,7 @@ int main() {
   NotGate n1 = NotGate({10, 30});
   ObjectSet<object> obj_group;
   obj_group.add(&a1);
-  obj_group.add(&a2);
+ // obj_group.add(&a2);
   obj_group.add(&n1);
   obj_group.add(&Spline::splines);
   obj_group.ready();

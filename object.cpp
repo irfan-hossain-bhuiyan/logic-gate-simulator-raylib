@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <functional>
-#include <iostream>
 #include <iterator>
 #include <memory>
 #include <queue>
@@ -11,7 +10,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
-
+#include <string>
 // Forward declaration of classes
 class object;
 class Node2d;
@@ -153,6 +152,9 @@ public:
       : objects(objs.begin(), objs.end()) {
     ObjectSet();
   }
+  T* head(){return *objects.begin();}
+  auto begin(){return objects.begin();}
+  auto end(){return objects.end();}
   void add(T *obj) {
     objects.insert(obj);
     obj->on_death_add_link([this](auto x) { this->objects.erase(dynamic_cast<T*>(x));});
@@ -173,6 +175,10 @@ public:
       x->draw_event.trigger_event();
     }
   }
+  bool empty(){
+	return objects.empty();
+  }
+  void clear(){objects.clear();}
   // void all_input() {
   //   for (auto x : objects) {
   //     x->input_event.trigger_event();
@@ -181,8 +187,8 @@ public:
 };
 template <typename T> class ObjectVec : public object {
 
-public:
   std::vector<std::unique_ptr<T>> ptr_array;
+public:
   ObjectVec() : ptr_array() {
     ready_event.add_link([this]() { this->ready(); });
     update_event.add_link([this]() { this->update(); });
@@ -210,6 +216,12 @@ public:
       x->draw_event.trigger_event();
     }
   }
+  std::unique_ptr<T>& operator[](size_t index){
+	return ptr_array[index];
+  }
+  void reserve(size_t size){ptr_array.reserve(size);}
+  auto begin(){return ptr_array.begin();}
+  auto end(){return ptr_array.end();}
 };
 
 // Definition of object class member functions

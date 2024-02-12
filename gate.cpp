@@ -1,12 +1,13 @@
 #include "./object.cpp"
+#include <iostream>
 #include <raylib.h>
 
 class Spline;
 class gate : public draggable, public Rect {
-  const static float line_width;
-  const static float circle_width;
-  const static Color Defaultcolor;
-  const static float line_height;
+  static constexpr float line_width = 3;
+  static constexpr float circle_width = 5;
+  static constexpr Color Defaultcolor = BLACK;
+  static constexpr float line_height = 10;
 
 public:
   class gatepoint : public clickable, public Node2d {
@@ -25,37 +26,38 @@ public:
     void on_click();
     Circle cir();
     void draw();
+    void update_boolean_state();
 
   private:
-    std::vector<Spline *> connected_spline;
+    ObjectSet<Spline> connected_spline;
     State state;
   };
 
- void update() {
+  void update() {
     Rectangle rec = rect();
     Vector2 pos = {rec.x, rec.y};
     float segment_height = rec.height / (input_point + 1);
     for (int i = 1; i <= input_point; i++) {
       auto point1 = pos + Vector2{0, segment_height * i};
       auto point2 = point1 + Vector2{-line_height, 0};
-      gateinputpoints.ptr_array[i - 1]->pos = point2;
+      gateinputpoints[i - 1]->pos = point2;
     }
     segment_height = rec.height / (output_point + 1);
     for (int i = 1; i <= output_point; i++) {
       auto point1 = pos + Vector2{rec.width, segment_height * i};
       auto point2 = point1 + Vector2{line_height, 0};
-      gateoutputpoints.ptr_array[i - 1]->pos = point2;
+      gateoutputpoints[i - 1]->pos = point2;
     }
+    boolean_update();
   }
 
-public:
   virtual void evaluate(){};
 
   gate(float width, float height, i32 input_point = 2, i32 output_point = 1)
       : input_point(input_point), output_point(output_point),
-         Rect(width, height) {
-    gateinputpoints.ptr_array.reserve(input_point);
-    gateoutputpoints.ptr_array.reserve(output_point);
+        Rect(width, height) {
+    gateinputpoints.reserve(input_point);
+    gateoutputpoints.reserve(output_point);
     range(i, 0, input_point) {
       gateinputpoints.add(new gatepoint(gatepoint::ingoing));
     }
@@ -66,29 +68,31 @@ public:
     gateoutputpoints.link_to_object(this);
     update_event.add_link([this]() { this->update(); });
   }
-
+protected:
+  ObjectVec<gate::gatepoint> gateinputpoints;
+  ObjectVec<gate::gatepoint> gateoutputpoints;
 private:
   i32 input_point = 0;
   i32 output_point = 0;
-  ObjectVec<gate::gatepoint> gateinputpoints;
-  ObjectVec<gate::gatepoint> gateoutputpoints;
+  void boolean_update(){
+	for(auto &x:gateinputpoints){x->update_boolean_state();}
+	evaluate();
+	for(auto &x:gateoutputpoints){x->update_boolean_state();}
+  }
 };
-  const float gate::line_width=3;
-  const float gate::circle_width=5;
-  const Color gate::Defaultcolor=BLACK;
-  const float gate::line_height=10;
-
 
 // Declaration of Spline class
 class Spline : public virtual object {
-  const float SplineThickness = 3.0;
-  const Color SplineColor = GRAY;
+  static constexpr float SplineThickness = 3.0;
+  static constexpr Color SplineNegativeColor = GRAY;
+  static constexpr Color SplinePositiveColor = RED;
 
 public:
   static ObjectSet<Spline> splines;
   static Spline *drawing_spline;
   gate::gatepoint *outgoing_point;
   gate::gatepoint *ingoing_point;
+  bool is_on = false;
   Spline(gate::gatepoint *outgoing_point, gate::gatepoint *ingoing_point);
   void draw();
 };
@@ -110,7 +114,7 @@ void Spline::draw() {
       outgoing_point == nullptr ? GetMousePosition() : outgoing_point->pos;
   auto point2 =
       ingoing_point == nullptr ? GetMousePosition() : ingoing_point->pos;
-  DrawLineBezier(point1, point2, SplineThickness, SplineColor);
+  DrawLineBezier(point1, point2, SplineThickness, this->is_on?SplinePositiveColor:SplineNegativeColor);
 }
 
 // Definition of gatepoint class
@@ -123,8 +127,20 @@ gate::gatepoint::gatepoint(State state) : state(state) {
 }
 void gate::gatepoint::draw() {
   DrawCircleCir(cir(), color);
-  DrawLineV(pos, pos + Vector2{(state == ingoing ? 1 : -1) * gate::line_height, 0},
+  DrawLineV(pos,
+            pos + Vector2{(state == ingoing ? 1 : -1) * gate::line_height, 0},
             color);
+}
+void gate::gatepoint::update_boolean_state() {
+  if (this->state == ingoing) {
+    this->boolean_state =
+        this->connected_spline.empty() ? false : connected_spline.head()->is_on;
+  }
+  if (this->state == outgoing) {
+    for (auto x : connected_spline) {
+      x->is_on = this->boolean_state;
+    }
+  }
 }
 Circle gate::gatepoint::cir() { return Circle{pos, radius}; }
 bool gate::gatepoint::collision_point(Vector2 point) {
@@ -136,7 +152,7 @@ void gate::gatepoint::on_click() {
   // not necessary for the outgoing node because you can have multiple node from
   // the outgoing.
   if (state == ingoing && !connected_spline.empty()) {
-    delete connected_spline[0];
+    delete connected_spline.head();
     connected_spline.clear();
   }
 
@@ -144,7 +160,7 @@ void gate::gatepoint::on_click() {
 
     auto ptr = state == ingoing ? new Spline(nullptr, this)
                                 : new Spline(this, nullptr);
-    connected_spline.push_back(ptr);
+    connected_spline.add(ptr);
     Spline::drawing_spline = ptr;
   }
   if (Spline::drawing_spline != nullptr) {
@@ -153,14 +169,14 @@ void gate::gatepoint::on_click() {
       // gatepointer and gatepointer to the spline. There are duplication in
       // here.
       Spline::drawing_spline->ingoing_point = this;
-      connected_spline.push_back(Spline::drawing_spline);
+      connected_spline.add(Spline::drawing_spline);
       Spline::drawing_spline = nullptr;
 
     } else if (state == outgoing &&
                Spline::drawing_spline->outgoing_point == nullptr) {
       // There are duplication in here.
       Spline::drawing_spline->outgoing_point = this;
-      connected_spline.push_back(Spline::drawing_spline);
+      connected_spline.add(Spline::drawing_spline);
       Spline::drawing_spline = nullptr;
     }
   }

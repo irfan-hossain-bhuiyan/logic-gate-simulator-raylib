@@ -1,7 +1,9 @@
 #pragma once
 #include <raylib.h>
 #include <raymath.h>
-
+#include <string>
+const std::string TRUE="TRUE";
+const std::string FALSE="FalSE";
 using i32 = int;
 using i64 = long long;
 using u32 = unsigned int;

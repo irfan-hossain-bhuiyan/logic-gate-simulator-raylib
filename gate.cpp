@@ -153,7 +153,6 @@ void gate::gatepoint::on_click() {
   // the outgoing.
   if (state == ingoing && !connected_spline.empty()) {
     delete connected_spline.head();
-    connected_spline.clear();
   }
 
   if (Spline::drawing_spline == nullptr) {

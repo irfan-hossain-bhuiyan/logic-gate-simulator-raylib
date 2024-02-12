@@ -6,7 +6,7 @@
 // const region
 // end region
 // declaration
-struct AndGate;
+class AndGate;
 // declaration end
 //
 // And Gate class
@@ -29,19 +29,55 @@ public:
     this->gateoutputpoints[0]->boolean_state =
         this->gateinputpoints[0]->boolean_state &&
         this->gateinputpoints[1]->boolean_state;
-
   }
   // functions
 private:
-  Vector2 circle_center() {
-    return Vector2{pos.x + GateWidth,
-                   static_cast<float>(pos.y + GateHeight / 2.0)};
-  }
-  float circle_radius() { return GateHeight / 2.0; }
-  Circle cir() { return Circle{circle_center(), circle_radius()}; }
+  //  Vector2 circle_center() {
+  //    return Vector2{pos.x + GateWidth,
+  //                   static_cast<float>(pos.y + GateHeight / 2.0)};
+  //  }
+  //  float circle_radius() { return GateHeight / 2.0; }
+  //  Circle cir() { return Circle{circle_center(), circle_radius()}; }
   bool collision_point(Vector2 point) override {
-    return CheckCollisionPointRec(point, rect()) ||
-           CheckCollisionPointCircle(point, circle_center(), circle_radius());
+    return CheckCollisionPointRec(point, rect());
+    //          CheckCollisionPointCircle(point, circle_center(),
+    //          circle_radius());
+  }
+
+  // Not gate class
+};
+class OrGate : public gate {
+  static constexpr float GateHeight = 30;
+  static constexpr float GateWidth = 50;
+
+public:
+  OrGate(Vector2 pos = {0}) : Node2d(pos), gate(GateWidth, GateHeight, 2, 1) {
+    draw_event.add_link([this]() { this->draw(); });
+  }
+
+  void draw() {
+    DrawRectangleRec(rect(), RED);
+    if (is_clicking) {
+      DrawRectangleLinesEx(rect(), 3, BLACK);
+    }
+  }
+  void evaluate() override {
+    this->gateoutputpoints[0]->boolean_state =
+        this->gateinputpoints[0]->boolean_state ||
+        this->gateinputpoints[1]->boolean_state;
+  }
+  // functions
+private:
+  //  Vector2 circle_center() {
+  //    return Vector2{pos.x + GateWidth,
+  //                   static_cast<float>(pos.y + GateHeight / 2.0)};
+  //  }
+  //  float circle_radius() { return GateHeight / 2.0; }
+  //  Circle cir() { return Circle{circle_center(), circle_radius()}; }
+  bool collision_point(Vector2 point) override {
+    return CheckCollisionPointRec(point, rect());
+    //          CheckCollisionPointCircle(point, circle_center(),
+    //          circle_radius());
   }
 
   // Not gate class
@@ -65,14 +101,77 @@ public:
     return CheckCollisionPointTriangle(point, point1(), point2(), point3());
   }
   void evaluate() override {
-	gateoutputpoints[0]->boolean_state=!gateinputpoints[0]->boolean_state;
+    gateoutputpoints[0]->boolean_state = !gateinputpoints[0]->boolean_state;
   }
 };
 
 // Switch
-class Switch : public DummyRectObject {
+class Light : public gate {
+  static constexpr float GateHeight = 30;
+  static constexpr float GateWidth = 50;
+
 public:
-  Switch(Vector2 pos) : Node2d(pos), DummyRectObject("Switch off") {}
+  Light(Vector2 pos = {0}) : Node2d(pos), gate(GateWidth, GateHeight, 1, 0) {
+    draw_event.add_link([this]() { this->draw(); });
+  }
+
+  void draw() {
+    DrawRectangleRec(rect(), gateinputpoints[0]->boolean_state ? RED : BLUE);
+    if (is_clicking) {
+      DrawRectangleLinesEx(rect(), 3, BLACK);
+    }
+  }
+  // functions
+private:
+  //  Vector2 circle_center() {
+  //    return Vector2{pos.x + GateWidth,
+  //                   static_cast<float>(pos.y + GateHeight / 2.0)};
+  //  }
+  //  float circle_radius() { return GateHeight / 2.0; }
+  //  Circle cir() { return Circle{circle_center(), circle_radius()}; }
+  bool collision_point(Vector2 point) override {
+    return CheckCollisionPointRec(point, rect());
+    //          CheckCollisionPointCircle(point, circle_center(),
+    //          circle_radius());
+  }
+
+  // Not gate class
+};
+class Switch : public gate {
+  static constexpr float GateHeight = 30;
+  static constexpr float GateWidth = 50;
+  bool is_on = false;
+
+public:
+  Switch(Vector2 pos = {0}) : Node2d(pos), gate(GateWidth, GateHeight, 0, 1) {
+    draw_event.add_link([this]() { this->draw(); });
+    on_click_pressed.add_link([this]() { this->is_on = !this->is_on; });
+  }
+
+  void draw() {
+    DrawRectangleRec(rect(), is_on ? GREEN : RED);
+    if (is_clicking) {
+      DrawRectangleLinesEx(rect(), 3, BLACK);
+    }
+  }
+  void evaluate()override{
+	gateoutputpoints[0]->boolean_state=is_on;
+  }
+  // functions
+private:
+  //  Vector2 circle_center() {
+  //    return Vector2{pos.x + GateWidth,
+  //                   static_cast<float>(pos.y + GateHeight / 2.0)};
+  //  }
+  //  float circle_radius() { return GateHeight / 2.0; }
+  //  Circle cir() { return Circle{circle_center(), circle_radius()}; }
+  bool collision_point(Vector2 point) override {
+    return CheckCollisionPointRec(point, rect());
+    //          CheckCollisionPointCircle(point, circle_center(),
+    //          circle_radius());
+  }
+
+  // Not gate class
 };
 
 // Bulb
@@ -87,11 +186,13 @@ int main() {
   AndGate a1 = AndGate({20, 50});
   AndGate a2 = AndGate({50, 60});
   NotGate n1 = NotGate({10, 30});
-  ObjectSet<object> obj_group;
-  obj_group.add(&a1);
- // obj_group.add(&a2);
-  obj_group.add(&n1);
-  obj_group.add(&Spline::splines);
+  Light l1=Light({70,100});
+  Switch s1=Switch({20,100});
+  ObjectSet<object> obj_group{&a1,&a2,&n1,&l1,&s1,&Spline::splines};
+  //obj_group.add(&a1);
+  // obj_group.add(&a2);
+  //obj_group.add(&n1);
+ // obj_group.add(&Spline::splines);
   obj_group.ready();
   while (!WindowShouldClose()) {
     manager::onready(); // For a data to the frame number it is currently on.

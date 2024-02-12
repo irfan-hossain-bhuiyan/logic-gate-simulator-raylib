@@ -1,3 +1,4 @@
+#pragma once
 #include "./basic_template.cpp"
 #include <algorithm>
 #include <array>
@@ -12,8 +13,6 @@
 #include <vector>
 
 // Forward declaration of classes
-class Spline;
-class gatepoint;
 class object;
 class Node2d;
 class clickable;
@@ -312,110 +311,6 @@ void DummyRectObject::draw() {
 bool DummyRectObject::collision_point(Vector2 point) {
   return CheckCollisionPointRec(point, rect());
 }
-class gatepoint : public clickable, public Node2d {
-  const float radius = 4;
-  const Color color = BLACK;
-
-public:
-  enum State {
-    outgoing,
-    ingoing,
-  };
-  gatepoint(State state);
-
-  bool collision_point(Vector2 point) override;
-  void on_click();
-  Circle cir();
-  void draw();
-
-private:
-  std::vector<Spline *> connected_spline;
-  State state;
-};
-
-// Declaration of Spline class
-class Spline :public virtual object {
-  const float SplineThickness = 3.0;
-  const Color SplineColor = GRAY;
-
-public:
-  static ObjectSet<Spline> splines;
-  static Spline *drawing_spline;
-  gatepoint *outgoing_point;
-  gatepoint *ingoing_point;
-  Spline(gatepoint *outgoing_point, gatepoint *ingoing_point);
-  void draw();
-};
-
-// Definition of Spline class member functions
-ObjectSet<Spline> Spline::splines=ObjectSet<Spline>();
-Spline *Spline::drawing_spline = nullptr;
-Spline::Spline(gatepoint *gatepoint1, gatepoint *gatepoint2)
-    : outgoing_point(gatepoint1), ingoing_point(gatepoint2) {
-  draw_event.add_link([this]() { this->draw(); });
-  splines.add(this);
-}
-void Spline::draw() {
-  if (outgoing_point == nullptr && ingoing_point == nullptr) {
-    std::cerr << "all points are null ptr";
-    return;
-  }
-  auto point1 =
-      outgoing_point == nullptr ? GetMousePosition() : outgoing_point->pos;
-  auto point2 =
-      ingoing_point == nullptr ? GetMousePosition() : ingoing_point->pos;
-  DrawLineBezier(point1, point2, SplineThickness, SplineColor);
-}
-
-// Definition of gatepoint class
-
-// Definition of gatepoint class member functions
-gatepoint::gatepoint(State state) : state(state) {
-  Debug::add_text("constructor called.");
-  on_click_pressed.add_link([this]() { this->on_click(); });
-  draw_event.add_link([this]() { this->draw(); });
-}
-void gatepoint::draw() { DrawCircleCir(cir(), color); }
-Circle gatepoint::cir() { return Circle{pos, radius}; }
-bool gatepoint::collision_point(Vector2 point) {
-  return CheckCollisionPointCircle(point, cir());
-}
-void gatepoint::on_click() {
-  // remove the Spline if there is one in the
-  // ingoing node.
-  // not necessary for the outgoing node because you can have multiple node from
-  // the outgoing.
-  if (state == ingoing && !connected_spline.empty()) {
-    delete connected_spline[0];
-    connected_spline.clear();
-  }
-
-  if (Spline::drawing_spline == nullptr) {
-
-    auto ptr = state == ingoing ? new Spline(nullptr, this)
-                                : new Spline(this, nullptr);
-    connected_spline.push_back(ptr);
-    Spline::drawing_spline = ptr;
-  }
-  if (Spline::drawing_spline != nullptr) {
-    if (state == ingoing && Spline::drawing_spline->ingoing_point == nullptr) {
-      // They are doubly linked.You need to coonect pointer of the spline to
-      // gatepointer and gatepointer to the spline. There are duplication in
-      // here.
-      Spline::drawing_spline->ingoing_point = this;
-      connected_spline.push_back(Spline::drawing_spline);
-      Spline::drawing_spline = nullptr;
-
-    } else if (state == outgoing &&
-               Spline::drawing_spline->outgoing_point == nullptr) {
-      // There are duplication in here.
-      Spline::drawing_spline->outgoing_point = this;
-      connected_spline.push_back(Spline::drawing_spline);
-      Spline::drawing_spline = nullptr;
-    }
-  }
-}
-
 // Declaration of Rect class
 class Rect : public virtual Node2d {
 public:

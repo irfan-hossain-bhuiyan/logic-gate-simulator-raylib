@@ -1,73 +1,16 @@
 #include "./basic_template.cpp"
+#include "./gate.cpp"
 #include "./object.cpp"
 #include <raylib.h>
 #include <vector>
 // const region
 // end region
-
 // declaration
 struct AndGate;
 class object;
 // declaration end
 //
 // And Gate class
-class gate : public draggable, public Rect {
-  const float line_width = 3;
-  const float circle_width = 5;
-  const float line_height = 10;
-  const Color Defaultcolor = BLACK;
-
-private:
-  i32 input_point = 0;
-  i32 output_point = 0;
-  ObjectVec<gatepoint> gateinputpoints;
-  ObjectVec<gatepoint> gateoutputpoints;
-
-public:
-  std::vector<bool> inputs;
-  std::vector<bool> outputs;
-  void draw() {
-    Rectangle rec = rect();
-    Vector2 pos = {rec.x, rec.y};
-    float segment_height = rec.height / (input_point + 1);
-    // Draw input lines
-    for (int i = 1; i <= input_point; i++) {
-      auto point1 = pos + Vector2{0, segment_height * i};
-      auto point2 = point1 + Vector2{-line_height, 0};
-      DrawLineV(point1, point2, Defaultcolor);
-      gateinputpoints.ptr_array[i - 1]->pos = point2;
-    }
-    // Draw output line
-    segment_height = rec.height / (output_point + 1);
-    // Draw input lines
-    for (int i = 1; i <= output_point; i++) {
-      auto point1 = pos + Vector2{rec.width, segment_height * i};
-      auto point2 = point1 + Vector2{line_height, 0};
-      DrawLineV(point1, point2, Defaultcolor);
-      gateoutputpoints.ptr_array[i - 1]->pos = point2;
-    }
-  }
-
-public:
-  virtual void evaluate(){};
-
-  gate(float width, float height, i32 input_point = 2, i32 output_point = 1)
-      : input_point(input_point), output_point(output_point),
-        inputs(input_point), outputs(output_point), Rect(width, height) {
-    gateinputpoints.ptr_array.reserve(input_point);
-    gateoutputpoints.ptr_array.reserve(output_point);
-    range(i, 0, input_point) {
-      gateinputpoints.add(new gatepoint(gatepoint::ingoing));
-    }
-    range(i, 0, output_point) {
-      gateoutputpoints.add(new gatepoint(gatepoint::outgoing));
-    }
-    draw_event.add_link([this]() { this->draw(); });
-    gateinputpoints.link_to_object(this);
-    gateoutputpoints.link_to_object(this);
-  }
-};
-
 const float AndGateHeight = 30;
 const float AndGateWidth = 50;
 class AndGate : public gate {
@@ -84,7 +27,7 @@ public:
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
   }
-  void evaluate() override { outputs[0] = inputs[0] && inputs[1]; }
+  void evaluate() override { }
   // functions
 private:
   Vector2 circle_center() {
@@ -120,7 +63,7 @@ public:
   bool collision_point(Vector2 point) override {
     return CheckCollisionPointTriangle(point, point1(), point2(), point3());
   }
-  void evaluate() override { outputs[0] = !inputs[0]; }
+  void evaluate() override { }
 };
 
 // Switch

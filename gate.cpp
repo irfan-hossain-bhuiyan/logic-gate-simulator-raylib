@@ -152,7 +152,7 @@ void gate::gatepoint::on_click() {
   // not necessary for the outgoing node because you can have multiple node from
   // the outgoing.
   if (state == ingoing && !connected_spline.empty()) {
-    delete connected_spline.head();
+	connected_spline.delete_all();
   }
 
   if (Spline::drawing_spline == nullptr) {

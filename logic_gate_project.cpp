@@ -183,12 +183,10 @@ int main() {
   }
 
   SetTargetFPS(60);
-  AndGate a1 = AndGate({20, 50});
-  AndGate a2 = AndGate({50, 60});
+  NotGate a1 = NotGate({20, 50});
+  NotGate a2 = NotGate({50, 60});
   NotGate n1 = NotGate({10, 30});
-  Light l1=Light({70,100});
-  Switch s1=Switch({20,100});
-  ObjectSet<object> obj_group{&a1,&a2,&n1,&l1,&s1,&Spline::splines};
+ ObjectSet<object> obj_group{&a1,&a2,&n1,&Spline::splines};
   //obj_group.add(&a1);
   // obj_group.add(&a2);
   //obj_group.add(&n1);

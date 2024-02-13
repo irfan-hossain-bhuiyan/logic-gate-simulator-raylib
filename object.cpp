@@ -8,9 +8,10 @@
 #include <queue>
 #include <raylib.h>
 #include <set>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <string>
 // Forward declaration of classes
 class object;
 class Node2d;
@@ -54,13 +55,19 @@ void lastdrawing();
 } // namespace manager
 namespace Debug {
 const u32 max_size_ = 16;
+std::stringstream str_;
 std::queue<std::string> queue_ = std::queue<std::string>();
-void add_text(const std::string &text) {
-  queue_.push(text);
+void add_text() {
+  queue_.push(std::move(str_).str());
+  str_.str("");
   if (queue_.size() > max_size_) {
     queue_.pop(); // Remove the oldest string if the queue size exceeds the
                   // maximum size
   }
+}
+template <typename T, typename... Args> void add_text(T &text, Args &...rest) {
+  str_ << text;
+  add_text(rest...);
 }
 
 std::string get_combined_text() {
@@ -82,7 +89,7 @@ std::string get_combined_text() {
 namespace manager {
 void onready() { frame++; }
 void lastdrawing() {
-  DrawText(Debug::get_combined_text().c_str(), 5, 5, 11, RED);
+  DrawText(Debug::get_combined_text().c_str(), 5, 5, 15, RED);
 }
 } // namespace manager
 
@@ -95,7 +102,7 @@ public:
   object() {}
   virtual ~object() {
     Debug::add_text("Destructor called.");
-    on_death.trigger_event(this);
+    on_death.trigger_event();
   }
 
 public:
@@ -130,12 +137,12 @@ public:
     linked_object->unlink_all(linked_id);
     linked_object = nullptr;
   }
-  void on_death_add_link(std::function<void(object *)> func) {
+  void on_death_add_link(std::function<void()> func) {
     on_death.add_link(func);
   }
 
 private:
-  event<object *> on_death;
+  event<> on_death;
   object *linked_object = nullptr;
   std::array<u32, 3> linked_id = {0};
 };
@@ -148,16 +155,24 @@ public:
     update_event.add_link([this]() { this->update(); });
     draw_event.add_link([this]() { this->draw(); });
   }
-  ObjectSet(std::initializer_list<T *> objs)
-      : objects(objs.begin(), objs.end()) {
+  ObjectSet(std::initializer_list<T *> objs) {
     ObjectSet();
+    for (auto x : objs)
+      add(x);
   }
-  T* head(){return *objects.begin();}
-  auto begin(){return objects.begin();}
-  auto end(){return objects.end();}
+  T *head() { return *objects.begin(); }
+  auto begin() { return objects.begin(); }
+  auto end() { return objects.end(); }
   void add(T *obj) {
     objects.insert(obj);
-    obj->on_death_add_link([this](auto x) { this->objects.erase(dynamic_cast<T*>(x));});
+    obj->on_death_add_link([this, obj]() {
+      auto it = this->objects.find(obj);
+      if (it == objects.end()) {
+        Debug::add_text("The element isn't here.It got destroyed before.");
+        return;
+      }
+      this->objects.erase(it);
+    });
   }
   void remove(object *obj) { objects.erase(obj); }
   void ready() {
@@ -175,10 +190,14 @@ public:
       x->draw_event.trigger_event();
     }
   }
-  bool empty(){
-	return objects.empty();
+  bool empty() { return objects.empty(); }
+  void clear() { objects.clear(); }
+  void delete_all() {
+	  std::vector<T*> temp;
+	  std::move(objects.begin(),objects.end(),std::back_inserter(temp));
+	  objects.clear();
+	  for(auto x:temp)delete x;
   }
-  void clear(){objects.clear();}
   // void all_input() {
   //   for (auto x : objects) {
   //     x->input_event.trigger_event();
@@ -188,6 +207,7 @@ public:
 template <typename T> class ObjectVec : public object {
 
   std::vector<std::unique_ptr<T>> ptr_array;
+
 public:
   ObjectVec() : ptr_array() {
     ready_event.add_link([this]() { this->ready(); });
@@ -200,7 +220,9 @@ public:
     // Duplication here.
     ObjectVec();
   }
-  void add(T *element) { this->ptr_array.push_back(std::unique_ptr<T>(element)); }
+  void add(T *element) {
+    this->ptr_array.push_back(std::unique_ptr<T>(element));
+  }
   void ready() {
     for (auto &x : this->ptr_array) {
       x->ready_event.trigger_event();
@@ -216,12 +238,10 @@ public:
       x->draw_event.trigger_event();
     }
   }
-  std::unique_ptr<T>& operator[](size_t index){
-	return ptr_array[index];
-  }
-  void reserve(size_t size){ptr_array.reserve(size);}
-  auto begin(){return ptr_array.begin();}
-  auto end(){return ptr_array.end();}
+  std::unique_ptr<T> &operator[](size_t index) { return ptr_array[index]; }
+  void reserve(size_t size) { ptr_array.reserve(size); }
+  auto begin() { return ptr_array.begin(); }
+  auto end() { return ptr_array.end(); }
 };
 
 // Definition of object class member functions

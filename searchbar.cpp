@@ -1,95 +1,86 @@
-
-#include "raylib.h"
+#include "./basic_template.cpp"
+#include "./object.cpp"
+#include <algorithm>
+#include <cstring>
+#include <raygui.h>
+#include <raylib.h>
 #include <string>
 #include <vector>
 
-class SearchBar {
+class InputBox : public virtual object, public Rect {
+public:
+  static constexpr float width = 100;
+  static constexpr float height = 30;
+  static constexpr int text_size = 64;
+  char text[text_size];
+  event<> on_enter;
+  event<> on_text_update;
+  InputBox(Vector2 pos) : Node2d(pos), Rect(width, height) {
+    draw_event.add_link([this]() { this->draw(); });
+  }
+
 private:
-    Rectangle bounds;
-    std::string searchString;
-    std::vector<std::string> searchResults;
-    bool enabled;
+  char text_previous[text_size];
+  void draw() {
+    if (strcmp(text, text_previous) != 0) {
+      strcpy(text_previous, text);
+      on_text_update.trigger_event();
+    }
+    if (GuiTextBox(rect(), text, text_size, true)) {
+      on_enter.trigger_event();
+    }
+  }
+};
+class MenuBox : public virtual object, public Rect {
+public:
+  static constexpr float width = 100;
+  static constexpr float height = 30;
+  event<std::string> on_select;
+  std::vector<std::string> texts;
+  MenuBox(Vector2 pos) : Node2d(pos), Rect(width, height) {
+    draw_event.add_link([this]() { this->draw(); });
+  }
+
+private:
+  int selected = -1;
+  void draw() {
+    if (GuiDropdownBox(rect(), vectorToString(texts).c_str(), &selected,
+                       true)) {
+      if (-1 < selected && selected < texts.size()) {
+        on_select.trigger_event(texts[selected]);
+      }
+    }
+  }
+};
+class SearchBar : public virtual object, public Node2d {
+private:
+  InputBox ib;
+  MenuBox mb;
 
 public:
-    SearchBar(float x, float y, float width) : bounds{ x, y, width, 30 }, enabled(false) {}
+  std::vector<std::string> texts;
+  event<std::string> on_select;
+  SearchBar(Vector2 pos)
+      : Node2d(pos), ib(pos), mb(pos + Vector2{0, InputBox::height}) {
+    this->draw_event.add_link([this]() {
+      ib.draw_event.trigger_event();
+      mb.draw_event.trigger_event();
+    });
+    ib.on_enter.add_link([this]() { this->on_enter_press(); });
+    ib.on_text_update.add_link([this]() { this->on_text_input(); });
+    mb.on_select.add_link(
+        [this](std::string select) { this->on_selection(select); });
+    mb.texts = texts;
+  }
 
-    void update() {
-        // Toggle search bar with Ctrl+S
-        if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
-            enabled = !enabled;
-        }
-
-        // Update search string and results
-        if (enabled) {
-            UpdateSearch();
-        }
+private:
+  void on_text_input() {
+    if (ib.text[0] == '\0') {
+      mb.texts = texts;
+    } else {
+      mb.texts = fuzzySearch(std::string(ib.text), this->texts);
     }
-
-    void draw() {
-        // Draw search bar outline
-        DrawRectangleLinesEx(bounds, 1, DARKGRAY);
-
-        if (enabled) {
-            // Draw search string
-            DrawText(searchString.c_str(), bounds.x + 5, bounds.y + 5, 20, BLACK);
-        }
-    }
-
-    void UpdateSearch() {
-        // Perform fuzzy search here (not implemented)
-        // For demonstration, just echoing the search string as result
-        searchResults.clear();
-        searchResults.push_back(searchString);
-    }
-
-    bool isMouseOutsideSearchBar() {
-        return !CheckCollisionPointRec(GetMousePosition(), bounds);
-    }
-
-    void handleInput() {
-        // Toggle search bar when clicked outside
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && isMouseOutsideSearchBar()) {
-            enabled = false;
-        }
-
-        // Input handling only when search bar is enabled
-        if (enabled) {
-            // Handle typing for search
-            int key = GetKeyPressed();
-            if (key > 0 && key != KEY_ENTER && key != KEY_ESCAPE) {
-                searchString += (char)key;
-            }
-
-            // Handle backspace
-            if (IsKeyPressed(KEY_BACKSPACE) && searchString.length() > 0) {
-                searchString.pop_back();
-            }
-        }
-    }
+  }
+  void on_enter_press() { on_select.trigger_event(std::string(ib.text)); }
+  void on_selection(std::string select) { strcpy(ib.text, select.c_str()); }
 };
-
-int main() {
-    const int screenWidth = 800;
-    const int screenHeight = 450;
-
-    InitWindow(screenWidth, screenHeight, "Search Bar Example");
-
-    SearchBar searchBar(10, 10, 200);
-
-    SetTargetFPS(60);
-
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-
-        searchBar.update();
-        searchBar.draw();
-        searchBar.handleInput();
-
-        EndDrawing();
-    }
-
-    CloseWindow();
-
-    return 0;
-}

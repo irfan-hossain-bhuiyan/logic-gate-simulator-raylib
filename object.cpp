@@ -193,10 +193,11 @@ public:
   bool empty() { return objects.empty(); }
   void clear() { objects.clear(); }
   void delete_all() {
-	  std::vector<T*> temp;
-	  std::move(objects.begin(),objects.end(),std::back_inserter(temp));
-	  objects.clear();
-	  for(auto x:temp)delete x;
+    std::vector<T *> temp;
+    std::move(objects.begin(), objects.end(), std::back_inserter(temp));
+    objects.clear();
+    for (auto x : temp)
+      delete x;
   }
   // void all_input() {
   //   for (auto x : objects) {
@@ -247,7 +248,7 @@ public:
 // Definition of object class member functions
 
 // Declaration of Node2d class
-class Node2d : public virtual object {
+class Node2d {
 public:
   Vector2 pos;
   Node2d() : pos() {}
@@ -343,6 +344,7 @@ void DummyRectObject::draw() {
 bool DummyRectObject::collision_point(Vector2 point) {
   return CheckCollisionPointRec(point, rect());
 }
+
 // Declaration of Rect class
 class Rect : public virtual Node2d {
 public:
@@ -351,7 +353,6 @@ public:
   Rect(float width, float height);
   Rectangle rect();
 };
-
 // Definition of Rect class member functions
 Rect::Rect(float width, float height) : height(height), width(width) {}
 Rectangle Rect::rect() { return Rectangle{pos.x, pos.y, width, height}; }

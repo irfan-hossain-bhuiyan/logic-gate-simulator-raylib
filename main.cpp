@@ -10,7 +10,10 @@ int main() {
   NotGate n1 = NotGate({20, 50});
   AndGate a1 = AndGate({50, 60});
   OrGate o1 = OrGate({10, 30});
- ObjectSet<object> obj_group{&a1,&o1,&n1,&Spline::splines};
+  Switch s1=Switch({100,30});
+  Light l1=Light({100,60});
+ ObjectSet<object> obj_group{&a1,&o1,&n1,&l1,&s1,&Spline::splines};
+
   //obj_group.add(&a1);
   // obj_group.add(&a2);
   //obj_group.add(&n1);

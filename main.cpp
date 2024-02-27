@@ -7,10 +7,10 @@ int main() {
   }
 
   SetTargetFPS(60);
-  NotGate a1 = NotGate({20, 50});
-  NotGate a2 = NotGate({50, 60});
-  NotGate n1 = NotGate({10, 30});
- ObjectSet<object> obj_group{&a1,&a2,&n1,&Spline::splines};
+  NotGate n1 = NotGate({20, 50});
+  AndGate a1 = AndGate({50, 60});
+  OrGate o1 = OrGate({10, 30});
+ ObjectSet<object> obj_group{&a1,&o1,&n1,&Spline::splines};
   //obj_group.add(&a1);
   // obj_group.add(&a2);
   //obj_group.add(&n1);

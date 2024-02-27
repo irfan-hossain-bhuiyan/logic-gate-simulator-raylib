@@ -1,5 +1,5 @@
-#include "./basic_template.cpp"
-#include "./object.cpp"
+#include "../basic_template.cpp"
+#include "../object.cpp"
 #include <algorithm>
 #include <cstring>
 #include <raygui.h>
@@ -35,7 +35,7 @@ class MenuBox : public virtual object, public Rect {
 public:
   static constexpr float width = 100;
   static constexpr float height = 30;
-  event<std::string> on_select;
+  event<const std::string&> on_select;
   std::vector<std::string> texts;
   MenuBox(Vector2 pos) : Node2d(pos), Rect(width, height) {
     draw_event.add_link([this]() { this->draw(); });
@@ -57,10 +57,11 @@ private:
   InputBox ib;
   MenuBox mb;
 
-public:
   std::vector<std::string> texts;
+
+public:
   event<std::string> on_select;
-  SearchBar(Vector2 pos)
+  SearchBar(Vector2 pos={0})
       : Node2d(pos), ib(pos), mb(pos + Vector2{0, InputBox::height}) {
     this->draw_event.add_link([this]() {
       ib.draw_event.trigger_event();
@@ -71,6 +72,14 @@ public:
     mb.on_select.add_link(
         [this](std::string select) { this->on_selection(select); });
     mb.texts = texts;
+  }
+  void set_texts(std::vector<std::string> &&text) {
+    texts = text;
+    on_text_input();
+  }
+  void push_text(std::string &&text) {
+    texts.push_back(text);
+    on_text_input();
   }
 
 private:

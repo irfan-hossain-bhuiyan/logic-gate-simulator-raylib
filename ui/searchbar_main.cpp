@@ -11,7 +11,7 @@ int main() {
   SetTargetFPS(60);
   ObjectSet<SearchBar> obj_group;
   SearchBar sb{Vector2{10,10}};
-  sb.texts=std::vector<std::string>{"And","Not","Or"};
+  sb.set_texts(std::vector<std::string>{"And","Not","Or"});
   obj_group.add(&sb);
   // obj_group.add(&a2);
   //obj_group.add(&n1);

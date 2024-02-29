@@ -1,6 +1,5 @@
 #include "../basic_template.cpp"
 #include "../object.cpp"
-#include <algorithm>
 #include <cstring>
 #include <raygui.h>
 #include <raylib.h>
@@ -31,23 +30,24 @@ private:
     }
   }
 };
-class MenuBox : public virtual object, public Rect {
+class MenuBox : public virtual object, public Node2d {
 public:
-  static constexpr float width = 100;
-  static constexpr float height = 30;
-  event<const std::string&> on_select;
+  static constexpr float option_width = 100;
+  static constexpr float option_height = 30;
   std::vector<std::string> texts;
-  MenuBox(Vector2 pos) : Node2d(pos), Rect(width, height) {
+  event<const std::string &> on_select;
+  MenuBox(Vector2 pos) : Node2d(pos) {
     draw_event.add_link([this]() { this->draw(); });
   }
 
 private:
   int selected = -1;
   void draw() {
-    if (GuiDropdownBox(rect(), vectorToString(texts).c_str(), &selected,
-                       true)) {
-      if (-1 < selected && selected < texts.size()) {
-        on_select.trigger_event(texts[selected]);
+    for (int i = 0; i < texts.size(); i++) {
+      if (GuiButton(Rectangle{pos.x, pos.y + i * option_height, option_width,
+                              option_height},
+                    texts[i].c_str())) {
+        on_select.trigger_event(texts[i]);
       }
     }
   }
@@ -61,7 +61,7 @@ private:
 
 public:
   event<std::string> on_select;
-  SearchBar(Vector2 pos={0})
+  SearchBar(Vector2 pos = {0})
       : Node2d(pos), ib(pos), mb(pos + Vector2{0, InputBox::height}) {
     this->draw_event.add_link([this]() {
       ib.draw_event.trigger_event();

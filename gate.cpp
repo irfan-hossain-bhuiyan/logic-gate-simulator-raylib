@@ -59,25 +59,35 @@ public:
     gateinputpoints.reserve(input_point);
     gateoutputpoints.reserve(output_point);
     range(i, 0, input_point) {
-      gateinputpoints.add(new gatepoint(gatepoint::ingoing));
+	    auto gp=new gatepoint(gatepoint::ingoing);
+	    this->click_update.add_link([gp](){gp->click_update.trigger_event();});
+      gateinputpoints.add(gp);
     }
     range(i, 0, output_point) {
-      gateoutputpoints.add(new gatepoint(gatepoint::outgoing));
+	    auto gp=new gatepoint(gatepoint::outgoing);
+	    this->click_update.add_link([gp](){gp->click_update.trigger_event();});
+      gateoutputpoints.add(gp);
     }
     gateinputpoints.link_to_object(this);
     gateoutputpoints.link_to_object(this);
     update_event.add_link([this]() { this->update(); });
   }
+
 protected:
   ObjectVec<gate::gatepoint> gateinputpoints;
   ObjectVec<gate::gatepoint> gateoutputpoints;
+
 private:
   i32 input_point = 0;
   i32 output_point = 0;
-  void boolean_update(){
-	for(auto &x:gateinputpoints){x->update_boolean_state();}
-	evaluate();
-	for(auto &x:gateoutputpoints){x->update_boolean_state();}
+  void boolean_update() {
+    for (auto &x : gateinputpoints) {
+      x->update_boolean_state();
+    }
+    evaluate();
+    for (auto &x : gateoutputpoints) {
+      x->update_boolean_state();
+    }
   }
 };
 
@@ -114,7 +124,8 @@ void Spline::draw() {
       outgoing_point == nullptr ? GetMousePosition() : outgoing_point->pos;
   auto point2 =
       ingoing_point == nullptr ? GetMousePosition() : ingoing_point->pos;
-  DrawLineBezier(point1, point2, SplineThickness, this->is_on?SplinePositiveColor:SplineNegativeColor);
+  DrawLineBezier(point1, point2, SplineThickness,
+                 this->is_on ? SplinePositiveColor : SplineNegativeColor);
 }
 
 // Definition of gatepoint class
@@ -152,7 +163,7 @@ void gate::gatepoint::on_click() {
   // not necessary for the outgoing node because you can have multiple node from
   // the outgoing.
   if (state == ingoing && !connected_spline.empty()) {
-	connected_spline.delete_all();
+    connected_spline.delete_all();
   }
 
   if (Spline::drawing_spline == nullptr) {

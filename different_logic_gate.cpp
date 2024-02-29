@@ -21,7 +21,7 @@ public:
 
   void draw() {
     DrawRectangleRec(rect(), RED);
-    if (is_clicking) {
+    if (this==current_selected) {
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
     DrawText("And",pos.x+5,pos.y+10,11,BLACK);
@@ -58,7 +58,7 @@ public:
 
   void draw() {
     DrawRectangleRec(rect(), RED);
-    if (is_clicking) {
+    if (this==clickable::current_selected) {
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
     DrawText("Or",pos.x+5,pos.y+10,11,BLACK);
@@ -119,7 +119,7 @@ public:
 
   void draw() {
     DrawRectangleRec(rect(), gateinputpoints[0]->boolean_state ? RED : BLUE);
-    if (is_clicking) {
+    if (this==clickable::current_selected) {
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
     DrawText("L",pos.x+5,pos.y+10,15,BLACK);
@@ -153,7 +153,7 @@ public:
 
   void draw() {
     DrawRectangleRec(rect(), is_on ? GREEN : RED);
-    if (is_clicking) {
+    if (this==clickable::current_selected) {
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }
     DrawText("S",pos.x+5,pos.y+10,15,BLACK);

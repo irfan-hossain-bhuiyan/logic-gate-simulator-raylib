@@ -49,7 +49,7 @@ private:
 // Declaration of manager namespace
 namespace manager {
 static u64 frame = 0;
-void onready();
+void onupdate();
 void lastdrawing();
 
 } // namespace manager
@@ -87,7 +87,7 @@ std::string get_combined_text() {
 } // namespace Debug
 // Definition of manager namespace
 namespace manager {
-void onready() { frame++; }
+void onupdate() { frame++; }
 void lastdrawing() {
   DrawText(Debug::get_combined_text().c_str(), 5, 5, 15, RED);
 }
@@ -258,36 +258,26 @@ public:
 // Declaration of clickable class
 class clickable : public virtual object {
 public:
+  static clickable *selected;
+  static clickable *current_selected; // the pointer.nullptr for none.
   event<> on_click_pressed;
-  bool is_clicking = false;
+  event<> click_update;
   clickable();
   virtual bool collision_point(Vector2 point) = 0;
 
 private:
-  static u64 working_frame;
-  static clickable *current_selected; // the pointer.nullptr for none.
   void clickupdate();
 };
-
 // Definition of clickable class member functions
 clickable::clickable() {
-  update_event.add_link([this]() { this->clickupdate(); });
+  click_update.add_link([this]() { this->clickupdate(); });
 }
-u64 clickable::working_frame = 0;
 clickable *clickable::current_selected = 0;
+clickable *clickable::selected = 0;
 void clickable::clickupdate() {
-  if (working_frame != manager::frame) {
-    current_selected = nullptr;
-  }
-  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && current_selected == nullptr &&
-      collision_point(GetMousePosition())) {
-    current_selected = this;
-    working_frame = manager::frame;
+  if (collision_point(GetMousePosition()) && selected == nullptr) {
+    selected = this;
     on_click_pressed.trigger_event();
-    is_clicking = true;
-  }
-  if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-    is_clicking = false;
   }
 }
 
@@ -311,7 +301,8 @@ draggable::draggable() {
 Vector2 draggable::previous_obj_pos = {0};
 Vector2 draggable::mouse_click_pos = {0};
 void draggable::dragging() {
-  if (is_clicking) {
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
+      this == clickable::current_selected) {
     pos = GetMousePosition() - mouse_click_pos + previous_obj_pos;
   }
 }

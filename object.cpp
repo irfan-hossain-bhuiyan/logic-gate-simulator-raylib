@@ -19,7 +19,11 @@ class clickable;
 class draggable;
 class DummyRectObject;
 template <typename T> class ObjectSet;
-
+template <typename T> struct Objcmp {
+  bool operator()(const T* x, const T* y) const {
+    return static_cast<const object *>(x) < static_cast<const object *>(y);
+  }
+};
 // Declaration of event class
 template <typename... Args> class event {
 public:
@@ -147,7 +151,7 @@ private:
   std::array<u32, 3> linked_id = {0};
 };
 template <typename T> class ObjectSet : public object {
-  std::set<T *> objects;
+  std::set < T *, Objcmp<T> > objects;
 
 public:
   ObjectSet() {
@@ -174,7 +178,6 @@ public:
       this->objects.erase(it);
     });
   }
-  void remove(object *obj) { objects.erase(obj); }
   void ready() {
     for (auto x : objects) {
       x->ready_event.trigger_event();
@@ -192,6 +195,11 @@ public:
   }
   bool empty() { return objects.empty(); }
   void clear() { objects.clear(); }
+  void delete_obj(object *obj) {
+	  auto it=std::lower_bound(begin(),end(),obj,[](auto x,auto y){return static_cast<object*>(x)<static_cast<object*>(y);});
+	  if(it==end() || static_cast<object*>(*it)!=obj){return;}
+	  delete obj;
+   }
   void delete_all() {
     std::vector<T *> temp;
     std::move(objects.begin(), objects.end(), std::back_inserter(temp));
@@ -260,6 +268,7 @@ class clickable : public virtual object {
 public:
   static clickable *selected;
   static clickable *current_selected; // the pointer.nullptr for none.
+static clickable *previous_selection;
   event<> on_click_pressed;
   event<> click_update;
   clickable();
@@ -268,6 +277,7 @@ public:
 private:
   void clickupdate();
 };
+clickable* clickable::previous_selection=nullptr;
 // Definition of clickable class member functions
 clickable::clickable() {
   click_update.add_link([this]() { this->clickupdate(); });

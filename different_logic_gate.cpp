@@ -118,7 +118,7 @@ public:
   }
 
   void draw() {
-    DrawRectangleRec(rect(), gateinputpoints[0]->boolean_state ? RED : BLUE);
+    DrawRectangleRec(rect(), gateinputpoints[0]->boolean_state ? GREEN: RED);
     if (this==clickable::current_selected) {
       DrawRectangleLinesEx(rect(), 3, BLACK);
     }

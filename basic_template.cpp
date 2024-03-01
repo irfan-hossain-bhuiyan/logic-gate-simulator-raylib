@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <queue>
 #include <raylib.h>
 #include <raymath.h>
@@ -117,3 +118,4 @@ std::vector<std::string> fuzzySearch(const std::string& query, const std::vector
     
     return ans;
 }
+

@@ -50,8 +50,8 @@ void input_update() { _object_click_update(); }
 
 int main() {
   {
-    const u32 ScreenWidth = 800;
-    const u32 ScreenHeight = 600;
+    const u32 ScreenWidth = 1200;
+    const u32 ScreenHeight = 800;
     InitWindow(ScreenWidth, ScreenHeight, "Logic gate simulator");
   }
   mb.on_select.add_link([](auto x){menu_select(x);});

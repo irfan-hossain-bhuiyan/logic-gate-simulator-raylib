@@ -27,6 +27,7 @@ public:
     Circle cir();
     void draw();
     void update_boolean_state();
+    ~gatepoint() { connected_spline.delete_all(); }
 
   private:
     ObjectSet<Spline> connected_spline;
@@ -59,13 +60,13 @@ public:
     gateinputpoints.reserve(input_point);
     gateoutputpoints.reserve(output_point);
     range(i, 0, input_point) {
-	    auto gp=new gatepoint(gatepoint::ingoing);
-	    this->click_update.add_link([gp](){gp->click_update.trigger_event();});
+      auto gp = new gatepoint(gatepoint::ingoing);
+      this->click_update.add_link([gp]() { gp->click_update.trigger_event(); });
       gateinputpoints.add(gp);
     }
     range(i, 0, output_point) {
-	    auto gp=new gatepoint(gatepoint::outgoing);
-	    this->click_update.add_link([gp](){gp->click_update.trigger_event();});
+      auto gp = new gatepoint(gatepoint::outgoing);
+      this->click_update.add_link([gp]() { gp->click_update.trigger_event(); });
       gateoutputpoints.add(gp);
     }
     gateinputpoints.link_to_object(this);
